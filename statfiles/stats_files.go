@@ -1,4 +1,4 @@
-package main
+package statfiles
 
 import (
 	"fmt"
@@ -11,11 +11,11 @@ import (
 const HEADER_LINE = 1
 
 type NetworkStats struct {
-	line string
-	localAddress string
-	remoteAddress string
-	state string
-	inode string
+	Line string
+	LocalAddress string
+	RemoteAddress string
+	State string
+	Inode string
 }
 
 func check(e error) {
@@ -115,11 +115,11 @@ func ParseNetStats() []NetworkStats {
 			lineWordCount++
 			row = append( row, parseRowWord(lineWordCount, wordScanner.Text()) )
 		}
-		stat.line = row[0]
-		stat.localAddress = row[1]
-		stat.remoteAddress = row[2]
-		stat.state = row[3]
-		stat.inode = row[9]
+		stat.Line = row[0]
+		stat.LocalAddress = row[1]
+		stat.RemoteAddress = row[2]
+		stat.State = row[3]
+		stat.Inode = row[9]
 
 		stats = append(stats, stat)
 	}
