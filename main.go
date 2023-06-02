@@ -12,6 +12,6 @@ func main() {
 	stats := statfiles.ParseNetStats()
 
 	for _, stat := range stats {
-		fmt.Println(stat.Line, stat.LocalAddress, stat.RemoteAddress, stat.State, stat.Inode)
+		fmt.Println(stat.Protocol, stat.LocalAddress, stat.RemoteAddress, stat.State, stat.Inode)
 	}
 }

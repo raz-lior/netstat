@@ -10,8 +10,24 @@ import (
 
 const HEADER_LINE = 1
 
+var TCP_STATE_CODE_MAP = map[string]string{
+	"01": "ESTABLISHED",
+	"02": "SYN_SENT",
+	"03": "SYN_RECV",
+	"04": "FIN_WAIT1",
+	"05": "FIN_WAIT2",
+	"06": "TIME_WAIT",
+	"07": "CLOSE",
+	"08": "CLOSE_WAIT",
+	"09": "LAST_ACK",
+	"0A": "LISTEN",
+	"0B": "CLOSING",
+	"0C": "NEW_SYN_RECV",
+	"0D": "MAX_STATES",
+}
+
 type NetworkStats struct {
-	Line string
+	Protocol string
 	LocalAddress string
 	RemoteAddress string
 	State string
@@ -54,7 +70,7 @@ func parseRowWord(pos int, word string) string {
 	case 3:
 		return parseNetAddress(word)
 	case 4:
-		return word
+		return TCP_STATE_CODE_MAP[word]
 	case 10:
 		return word
 	default:
@@ -92,8 +108,11 @@ func getParser(row int) func(int,string) string {
 	return parser
 }
 
-func ParseNetStats() []NetworkStats {
-	tcpData, err := os.Open("/proc/net/tcp")
+func parseTcpFile(protocol string) []NetworkStats {
+
+	filePath := "/proc/net/" + protocol
+
+	tcpData, err := os.Open(filePath)
 	defer tcpData.Close()
 	check(err)
 
@@ -115,7 +134,8 @@ func ParseNetStats() []NetworkStats {
 			lineWordCount++
 			row = append( row, parseRowWord(lineWordCount, wordScanner.Text()) )
 		}
-		stat.Line = row[0]
+
+		stat.Protocol = protocol
 		stat.LocalAddress = row[1]
 		stat.RemoteAddress = row[2]
 		stat.State = row[3]
@@ -128,5 +148,14 @@ func ParseNetStats() []NetworkStats {
 		fmt.Fprintln(os.Stderr, "reading input:", err1)
 	}
 
+	return stats
+}
+
+func ParseNetStats() []NetworkStats {
+
+	stats := make([]NetworkStats,0)
+	tcp := parseTcpFile("tcp")
+
+	stats = append(stats, tcp...)
 	return stats
 }
