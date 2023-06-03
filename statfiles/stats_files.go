@@ -61,53 +61,6 @@ func parseNetAddress(addr string) string {
 	return fmt.Sprintf("%d.%d.%d.%d:%d", part1, part2, part3, part4, port)
 }
 
-func parseRowWord(pos int, word string) string {
-	switch pos {
-	case 1:
-		return word
-	case 2:
-		return parseNetAddress(word)
-	case 3:
-		return parseNetAddress(word)
-	case 4:
-		return TCP_STATE_CODE_MAP[word]
-	case 10:
-		return word
-	default:
-		return ""
-	}
-}
-
-func parseHeaderWord(pos int, word string) string {
-	switch pos {
-	case 1:
-		return word
-	case 2:
-		return word
-	case 3:
-		return word
-	case 4:
-		return word
-	case 12:
-		return word
-	default:
-		return ""
-	}
-}
-
-func getParser(row int) func(int,string) string {
-
-	var parser func (int, string) string
-
-	if row == HEADER_LINE {
-		parser = parseHeaderWord
-	} else {
-		parser = parseRowWord
-	}
-
-	return parser
-}
-
 func parseTcpFile(protocol string) []NetworkStats {
 
 	filePath := "/proc/net/" + protocol
@@ -117,34 +70,25 @@ func parseTcpFile(protocol string) []NetworkStats {
 	check(err)
 
 	stats := make([]NetworkStats, 0)
-	scanner := bufio.NewScanner(tcpData)
-	scanner.Scan() // skipping the header
+	lineScanner := bufio.NewScanner(tcpData)
+	lineScanner.Scan() // skipping the header
 
-	for scanner.Scan() {
+	for lineScanner.Scan() {
 
-		line := scanner.Text()
+		statParts := strings.Fields(lineScanner.Text())
 
-		wordScanner := bufio.NewScanner(strings.NewReader(line))
-		wordScanner.Split(bufio.ScanWords)
-
-		lineWordCount := 0
 		var stat NetworkStats
-		row := make([]string, 0)
-		for wordScanner.Scan() {
-			lineWordCount++
-			row = append( row, parseRowWord(lineWordCount, wordScanner.Text()) )
-		}
 
 		stat.Protocol = protocol
-		stat.LocalAddress = row[1]
-		stat.RemoteAddress = row[2]
-		stat.State = row[3]
-		stat.Inode = row[9]
+		stat.LocalAddress = parseNetAddress(statParts[1])
+		stat.RemoteAddress = parseNetAddress(statParts[2])
+		stat.State = TCP_STATE_CODE_MAP[statParts[3]]
+		stat.Inode = statParts[9]
 
 		stats = append(stats, stat)
 	}
 
-	if err1 := scanner.Err(); err1 != nil {
+	if err1 := lineScanner.Err(); err1 != nil {
 		fmt.Fprintln(os.Stderr, "reading input:", err1)
 	}
 
